@@ -125,8 +125,8 @@ export function AdminUsers() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">User Management</h1>
-          <p className="mt-2 text-base text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">User Management</h1>
+          <p className="mt-2 text-base text-muted-foreground">
             Monitor and manage rate limits for individual users
           </p>
         </div>
@@ -135,13 +135,13 @@ export function AdminUsers() {
           <button
             onClick={fetchUsers}
             disabled={loading}
-            className="inline-flex items-center px-4 py-2.5 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center px-4 py-2.5 border border-border shadow-sm text-sm font-medium rounded-lg text-foreground bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           
-          <button className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+          <button className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </button>
@@ -149,18 +149,18 @@ export function AdminUsers() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-sm font-semibold text-foreground mb-3">
               Search Identity
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search by identity key..."
-                className="pl-10 w-full border-gray-200 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5"
+                className="pl-10 w-full border-input rounded-lg shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground py-2.5"
                 value={filters.identityKey}
                 onChange={(e) => setFilters({ ...filters, identityKey: e.target.value })}
               />
@@ -168,11 +168,11 @@ export function AdminUsers() {
           </div>
           
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-sm font-semibold text-foreground mb-3">
               Identity Type
             </label>
             <select
-              className="w-full border-gray-200 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5"
+              className="w-full border-input rounded-lg shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground py-2.5"
               value={filters.identityType}
               onChange={(e) => setFilters({ ...filters, identityType: e.target.value as any })}
             >
@@ -184,11 +184,11 @@ export function AdminUsers() {
           </div>
           
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-sm font-semibold text-foreground mb-3">
               Status
             </label>
             <select
-              className="w-full border-gray-200 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5"
+              className="w-full border-input rounded-lg shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground py-2.5"
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
             >
@@ -202,70 +202,70 @@ export function AdminUsers() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                   Identity
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                   Usage (Min/Hr/Day)
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                   Reset Time
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+            <tbody className="bg-card divide-y divide-border">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-lg mr-4"></div>
-                        <div className="h-4 bg-gray-200 animate-pulse rounded w-32"></div>
+                        <div className="w-10 h-10 bg-muted animate-pulse rounded-lg mr-4"></div>
+                        <div className="h-4 bg-muted animate-pulse rounded w-32"></div>
                       </div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="h-6 bg-gray-200 animate-pulse rounded-full w-20"></div>
+                      <div className="h-6 bg-muted animate-pulse rounded-full w-20"></div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="h-4 bg-gray-200 animate-pulse rounded w-24"></div>
+                      <div className="h-4 bg-muted animate-pulse rounded w-24"></div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="h-4 bg-gray-200 animate-pulse rounded w-16"></div>
+                      <div className="h-4 bg-muted animate-pulse rounded w-16"></div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="h-4 bg-gray-200 animate-pulse rounded w-20"></div>
+                      <div className="h-4 bg-muted animate-pulse rounded w-20"></div>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="h-8 bg-gray-200 animate-pulse rounded-lg w-16"></div>
+                      <div className="h-8 bg-muted animate-pulse rounded-lg w-16"></div>
                     </td>
                   </tr>
                 ))
               ) : (
                 users.map((user) => (
-                  <tr key={user.identityKey} className="hover:bg-gray-50 transition-colors">
+                  <tr key={user.identityKey} className="hover:bg-accent transition-colors">
                     <td className="px-6 py-5 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                             {getIdentityIcon(user.identityType)}
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-semibold text-gray-900 max-w-xs truncate">
+                          <div className="text-sm font-semibold text-foreground max-w-xs truncate">
                             {user.identityKey}
                           </div>
-                          <div className="text-sm text-gray-500 capitalize">
+                          <div className="text-sm text-muted-foreground capitalize">
                             {user.identityType}
                           </div>
                         </div>
@@ -279,11 +279,11 @@ export function AdminUsers() {
                         </span>
                       </span>
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-5 whitespace-nowrap text-sm text-foreground">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-3">
-                          <span className="w-12 text-xs font-medium text-gray-600">Min:</span>
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <span className="w-12 text-xs font-medium text-muted-foreground">Min:</span>
+                          <div className="flex-1 bg-muted rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${
                                 (user.windows.perMinute.current / user.windows.perMinute.limit) > 0.9 
@@ -297,13 +297,13 @@ export function AdminUsers() {
                               }}
                             ></div>
                           </div>
-                          <span className="text-xs font-medium text-gray-700 min-w-0">
+                          <span className="text-xs font-medium text-foreground min-w-0">
                             {user.windows.perMinute.current}/{user.windows.perMinute.limit}
                           </span>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className="w-12 text-xs font-medium text-gray-600">Hr:</span>
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <span className="w-12 text-xs font-medium text-muted-foreground">Hr:</span>
+                          <div className="flex-1 bg-muted rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${
                                 (user.windows.perHour.current / user.windows.perHour.limit) > 0.9 
@@ -317,13 +317,13 @@ export function AdminUsers() {
                               }}
                             ></div>
                           </div>
-                          <span className="text-xs font-medium text-gray-700 min-w-0">
+                          <span className="text-xs font-medium text-foreground min-w-0">
                             {user.windows.perHour.current}/{user.windows.perHour.limit}
                           </span>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className="w-12 text-xs font-medium text-gray-600">Day:</span>
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <span className="w-12 text-xs font-medium text-muted-foreground">Day:</span>
+                          <div className="flex-1 bg-muted rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${
                                 (user.windows.perDay.current / user.windows.perDay.limit) > 0.9 
@@ -337,13 +337,13 @@ export function AdminUsers() {
                               }}
                             ></div>
                           </div>
-                          <span className="text-xs font-medium text-gray-700 min-w-0">
+                          <span className="text-xs font-medium text-foreground min-w-0">
                             {user.windows.perDay.current}/{user.windows.perDay.limit}
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-700">
+                    <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-foreground">
                       {formatTimeRemaining(user.windows.perMinute.resetTime)}
                     </td>
                     {/* <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-600">
@@ -353,7 +353,7 @@ export function AdminUsers() {
                       <button
                         onClick={() => resetUserLimits(user.identityKey)}
                         disabled={resetting === user.identityKey}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-primary bg-primary/10 hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 transition-colors"
                       >
                         <RotateCcw className={`h-3 w-3 mr-1 ${resetting === user.identityKey ? 'animate-spin' : ''}`} />
                         Reset
@@ -367,26 +367,26 @@ export function AdminUsers() {
         </div>
         
         {/* Pagination */}
-        <div className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200">
+        <div className="bg-card px-6 py-4 flex items-center justify-between border-t border-border">
           <div className="flex-1 flex justify-between sm:hidden">
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(currentPage - 1)}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground bg-background hover:bg-accent disabled:opacity-50 transition-colors"
             >
               Previous
             </button>
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground bg-background hover:bg-accent disabled:opacity-50 transition-colors"
             >
               Next
             </button>
           </div>
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-muted-foreground">
                 Showing page <span className="font-semibold">{currentPage}</span> of{' '}
                 <span className="font-semibold">{totalPages}</span>
               </p>
@@ -396,14 +396,14 @@ export function AdminUsers() {
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(currentPage - 1)}
-                  className="relative inline-flex items-center px-4 py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="relative inline-flex items-center px-4 py-2 rounded-l-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-accent disabled:opacity-50 transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(currentPage + 1)}
-                  className="relative inline-flex items-center px-4 py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                  className="relative inline-flex items-center px-4 py-2 rounded-r-lg border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-accent disabled:opacity-50 transition-colors"
                 >
                   Next
                 </button>

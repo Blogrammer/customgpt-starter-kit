@@ -232,14 +232,14 @@ export function AdminConfiguration() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 animate-pulse rounded w-64"></div>
+        <div className="h-8 bg-muted animate-pulse rounded w-64"></div>
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white shadow rounded-lg p-6">
-              <div className="h-6 bg-gray-200 animate-pulse rounded w-32 mb-4"></div>
+            <div key={i} className="bg-card shadow rounded-lg p-6">
+              <div className="h-6 bg-muted animate-pulse rounded w-32 mb-4"></div>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-200 animate-pulse rounded"></div>
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4"></div>
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
               </div>
             </div>
           ))}
@@ -255,15 +255,15 @@ export function AdminConfiguration() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rate Limit Configuration</h1>
-          <p className="mt-1 text-sm text-gray-500">Configure rate limiting rules and thresholds</p>
+          <h1 className="text-2xl font-bold text-foreground">Rate Limit Configuration</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Configure rate limiting rules and thresholds</p>
         </div>
 
         <div className="flex items-center space-x-4">
           {message && (
             <div
               className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
               }`}
             >
               {message.type === "success" ? (
@@ -278,7 +278,7 @@ export function AdminConfiguration() {
           <button
             onClick={resetConfig}
             disabled={!hasChanges}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center px-3 py-2 border border-border shadow-sm text-sm leading-4 font-medium rounded-md text-foreground bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset
@@ -287,7 +287,7 @@ export function AdminConfiguration() {
           <button
             onClick={saveConfig}
             disabled={saving || !hasChanges}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50"
           >
             <Save className={`h-4 w-4 mr-2 ${saving ? "animate-spin" : ""}`} />
             {saving ? "Saving..." : "Save Changes"}
@@ -296,48 +296,48 @@ export function AdminConfiguration() {
       </div>
 
       {/* Global Settings */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+      <div className="bg-card shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-medium text-foreground flex items-center">
             <Settings className="h-5 w-5 mr-2" />
             Global Rate Limits
           </h3>
-          <p className="mt-1 text-sm text-gray-500">Default rate limits applied to all endpoints</p>
+          <p className="mt-1 text-sm text-muted-foreground">Default rate limits applied to all endpoints</p>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <Clock className="inline h-4 w-4 mr-1" />
                 Per Minute
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerMinute}
                 onChange={(e) => updateGlobalConfig("defaultPerMinute", Number.parseInt(e.target.value))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <Clock className="inline h-4 w-4 mr-1" />
                 Per Hour
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerHour}
                 onChange={(e) => updateGlobalConfig("defaultPerHour", Number.parseInt(e.target.value))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <Clock className="inline h-4 w-4 mr-1" />
                 Per Day
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerDay}
                 onChange={(e) => updateGlobalConfig("defaultPerDay", Number.parseInt(e.target.value))}
               />
@@ -347,28 +347,28 @@ export function AdminConfiguration() {
       </div>
 
       {/* Rate Limiting Toggle */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+      <div className="bg-card shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-medium text-foreground flex items-center">
             <Activity className="h-5 w-5 mr-2" />
             Rate Limiting
           </h3>
-          <p className="mt-1 text-sm text-gray-500">Enable or disable rate limiting system-wide</p>
+          <p className="mt-1 text-sm text-muted-foreground">Enable or disable rate limiting system-wide</p>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-sm font-medium text-gray-900">Rate Limiting System</h4>
-              <p className="text-sm text-gray-500">Controls whether rate limiting is active</p>
+              <h4 className="text-sm font-medium text-foreground">Rate Limiting System</h4>
+              <p className="text-sm text-muted-foreground">Controls whether rate limiting is active</p>
             </div>
             <button
               onClick={toggleRateLimiting}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                config?.rateLimitingEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                config?.rateLimitingEnabled ? 'bg-primary' : 'bg-muted'
               }`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
                   config?.rateLimitingEnabled ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
@@ -379,27 +379,27 @@ export function AdminConfiguration() {
 
 
       {/* Routes in Scope */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+      <div className="bg-card shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-medium text-foreground flex items-center">
             <Settings className="h-5 w-5 mr-2" />
             Protected Routes
           </h3>
-          <p className="mt-1 text-sm text-gray-500">Routes that are protected by rate limiting and Turnstile</p>
+          <p className="mt-1 text-sm text-muted-foreground">Routes that are protected by rate limiting and Turnstile</p>
         </div>
         <div className="p-6">
           {/* Add New Route */}
           <div className="flex gap-2 mb-4">
             <input
               type="text"
-              className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="flex-1 border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
               placeholder="/api/example"
               value={newRouteInScope}
               onChange={(e) => setNewRouteInScope(e.target.value)}
             />
             <button
               onClick={addRouteInScope}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
             >
               Add Route
             </button>
@@ -408,18 +408,18 @@ export function AdminConfiguration() {
           {/* Routes List */}
           <div className="space-y-2">
             {config?.routesInScope.map((route, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                <span className="font-mono text-sm text-gray-700">{route}</span>
+              <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                <span className="font-mono text-sm text-foreground">{route}</span>
                 <button
                   onClick={() => removeRouteInScope(index)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  className="text-destructive hover:text-destructive/80 text-sm font-medium"
                 >
                   Remove
                 </button>
               </div>
             ))}
             {config?.routesInScope.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">No routes configured</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No routes configured</p>
             )}
           </div>
         </div>

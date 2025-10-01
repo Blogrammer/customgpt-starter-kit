@@ -187,14 +187,14 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 animate-pulse rounded w-64"></div>
+        <div className="h-8 bg-muted animate-pulse rounded w-64"></div>
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white shadow rounded-lg p-6">
-              <div className="h-6 bg-gray-200 animate-pulse rounded w-32 mb-4"></div>
+            <div key={i} className="bg-card shadow rounded-lg p-6">
+              <div className="h-6 bg-muted animate-pulse rounded w-32 mb-4"></div>
               <div className="space-y-3">
-                <div className="h-4 bg-gray-200 animate-pulse rounded"></div>
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4"></div>
+                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4"></div>
               </div>
             </div>
           ))}
@@ -210,15 +210,15 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
       {/* Header */}
       <div className="flex items-center justify-between mt-3">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Rate Limiting</h2>
-          <p className="mt-1 text-xs text-gray-500">Configure rate limiting rules and thresholds</p>
+          <h2 className="text-lg font-bold text-foreground">Rate Limiting</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Configure rate limiting rules and thresholds</p>
         </div>
 
         <div className="flex items-center space-x-3">
           {message && (
             <div
               className={`inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-medium ${
-                message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                message.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
               }`}
             >
               {message.type === "success" ? (
@@ -233,7 +233,7 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
           <button
             onClick={resetConfig}
             disabled={!hasChanges}
-            className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center px-2.5 py-1.5 border border-border shadow-sm text-xs font-medium rounded-md text-foreground bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
             Reset
@@ -242,7 +242,7 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
           <button
             onClick={saveConfig}
             disabled={saving || !hasChanges}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50"
           >
             <Save className={`h-3 w-3 mr-1 ${saving ? "animate-spin" : ""}`} />
             {saving ? "Saving..." : "Save Changes"}
@@ -251,13 +251,13 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
       </div>
 
       {/* Rate Limiting Toggle */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h3 className="text-base font-medium text-gray-900 flex items-center">
+      <div className="bg-card shadow rounded-lg">
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-base font-medium text-foreground flex items-center">
             <Shield className="h-4 w-4 mr-2" />
             Rate Limiting Control
           </h3>
-          <p className="mt-1 text-xs text-gray-500">Enable or disable rate limiting for all API endpoints</p>
+          <p className="mt-1 text-xs text-muted-foreground">Enable or disable rate limiting for all API endpoints</p>
         </div>
         <div className="p-4">
           <div className="flex items-center">
@@ -267,56 +267,56 @@ export function RateLimitingSettings({}: RateLimitingSettingsProps) {
               checked={config.rateLimitingEnabled}
               onChange={(e) => updateRateLimitingEnabled(e.target.checked)}
             />
-            <label className="ml-2 block text-xs text-gray-900">Enable rate limiting</label>
+            <label className="ml-2 block text-xs text-foreground">Enable rate limiting</label>
           </div>
         </div>
       </div>
 
       {/* Global Settings */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h3 className="text-base font-medium text-gray-900 flex items-center">
+      <div className="bg-card shadow rounded-lg">
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-base font-medium text-foreground flex items-center">
             <Settings className="h-4 w-4 mr-2" />
             Global Rate Limits
           </h3>
-          <p className="mt-1 text-xs text-gray-500">Default rate limits applied to all endpoints</p>
+          <p className="mt-1 text-xs text-muted-foreground">Default rate limits applied to all endpoints</p>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-foreground mb-1">
                 <Clock className="inline h-3 w-3 mr-1" />
                 Per Minute
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerMinute}
                 onChange={(e) => updateGlobalConfig("defaultPerMinute", Number.parseInt(e.target.value))}
                 disabled={!config.rateLimitingEnabled}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <Clock className="inline h-4 w-4 mr-1" />
                 Per Hour
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerHour}
                 onChange={(e) => updateGlobalConfig("defaultPerHour", Number.parseInt(e.target.value))}
                 disabled={!config.rateLimitingEnabled}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 <Clock className="inline h-4 w-4 mr-1" />
                 Per Day
               </label>
               <input
                 type="number"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full border-input rounded-md shadow-sm focus:ring-ring focus:border-ring bg-background text-foreground"
                 value={config.global.defaultPerDay}
                 onChange={(e) => updateGlobalConfig("defaultPerDay", Number.parseInt(e.target.value))}
                 disabled={!config.rateLimitingEnabled}
