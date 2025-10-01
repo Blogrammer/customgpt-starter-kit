@@ -21,7 +21,7 @@
   <p><em>↑ Click the image to try the live demo at <a href="https://starterkit.customgpt.ai/">starterkit.customgpt.ai</a></em></p>
 </div>
 
-## 🌐 Live Demo Available
+## 🌐 Live Demo Available.
 
 <div align="center">
   <table>
