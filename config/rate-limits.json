@@ -1,0 +1,16 @@
+{
+    "identityOrder": ["jwt-sub", "session-cookie", "ip"],
+    "limits": {
+      "global": {
+        "minute": 60,
+        "hour": 1000,
+        "day": 10000,
+        "month": 100000
+      }
+    },
+    "routesInScope": [
+      "/api/proxy/projects",
+      "/api/proxy/user"
+    ],
+    "rateLimitingEnabled": false
+  }

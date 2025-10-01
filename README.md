@@ -172,7 +172,23 @@ OPENAI_API_KEY=your-openai-api-key-here
 
 # Optional - Custom API base URL
 CUSTOMGPT_API_BASE_URL=https://app.customgpt.ai/api/v1
+
+# Optional - Rate limiting & bot protection (enterprise features)
+UPSTASH_REDIS_REST_URL=https://your-redis-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-redis-token
+TURNSTILE_SITE_KEY=your-turnstile-site-key
+TURNSTILE_SECRET_KEY=your-turnstile-secret-key
+TURNSTILE_ENABLED=true
 ```
+
+### 🔒 Optional: Enterprise Features
+
+For **rate limiting** and **bot protection** (Turnstile), add these optional environment variables:
+
+- **Redis (Upstash)**: Get free credentials at [upstash.com](https://upstash.com) → Create Redis Database
+- **Turnstile (Cloudflare)**: Get free keys at [dash.cloudflare.com](https://dash.cloudflare.com) → Security → Turnstile
+
+These features provide enterprise-grade protection but are completely optional. The app works perfectly without them.
 
 5. **Start development server:**
 

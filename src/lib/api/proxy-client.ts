@@ -166,6 +166,26 @@ export class ProxyCustomGPTClient {
         console.warn('[ProxyClient] Demo mode but no API key available for request');
       }
       
+      // Add Turnstile token if available for anonymous users
+      if (typeof window !== 'undefined') {
+        try {
+          // Check for Turnstile token in localStorage or sessionStorage
+          const turnstileToken = sessionStorage.getItem('customgpt.turnstileToken') || 
+                               localStorage.getItem('customgpt.turnstileToken');
+          if (turnstileToken) {
+            const tokenData = JSON.parse(turnstileToken);
+            // Check if token is still valid (not expired)
+            if (tokenData.expiresAt && Date.now() < tokenData.expiresAt) {
+              baseHeaders['X-Turnstile-Token'] = tokenData.token;
+              baseHeaders['X-Turnstile-Action'] = 'api-request';
+            }
+          }
+        } catch (e) {
+          // Ignore token parsing errors
+          console.warn('[ProxyClient] Failed to parse Turnstile token:', e);
+        }
+      }
+      
       const headers: HeadersInit = isFormData 
         ? baseHeaders
         : { 

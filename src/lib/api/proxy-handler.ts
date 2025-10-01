@@ -6,6 +6,7 @@ import {
   isFreeTrialRequest 
 } from '@/lib/api/demo-limits-middleware';
 import { DEMO_API_HEADERS } from '@/lib/constants/demo-limits';
+import { applyRateLimit, RateLimitError } from '@/lib/rate-limiter';
 
 interface ProxyOptions {
   method?: string;
@@ -26,6 +27,74 @@ export async function proxyRequest(
   try {
     const apiUrl = `https://app.customgpt.ai/api/v1${apiPath}`;
     const method = options.method || request.method;
+    
+    // Apply rate limiting first (before any other checks)
+    let rateLimitHeaders: Record<string, string> = {};
+    try {
+      const rateLimitResult = await applyRateLimit(request);
+      rateLimitHeaders = rateLimitResult.headers;
+      
+      if (!rateLimitResult.allowed) {
+        // Check if this is a Turnstile verification failure
+        if (rateLimitResult.window === 'turnstile') {
+          console.log('[Proxy] Turnstile verification required:', {
+            path: apiPath,
+            identity: rateLimitHeaders['X-RateLimit-Identity'],
+            error: rateLimitHeaders['X-Turnstile-Error']
+          });
+          
+          return NextResponse.json(
+            { 
+              error: 'Human verification required',
+              message: rateLimitHeaders['X-Turnstile-Error'] || 'Please complete the security verification to continue.',
+              code: 'TURNSTILE_VERIFICATION_REQUIRED',
+              turnstileRequired: true
+            },
+            { 
+              status: 403, // Use 403 for verification required
+              headers: rateLimitHeaders
+            }
+          );
+        }
+        
+        // Regular rate limit exceeded
+        console.log('[Proxy] Rate limit exceeded:', {
+          path: apiPath,
+          identity: rateLimitHeaders['X-RateLimit-Identity'],
+          window: rateLimitResult.window,
+          limit: rateLimitResult.limit,
+          remaining: rateLimitResult.remaining
+        });
+        
+        return NextResponse.json(
+          { 
+            error: 'Rate limit exceeded',
+            message: `Too many requests. Try again in ${rateLimitHeaders['Retry-After']} seconds.`,
+            code: 'RATE_LIMIT_EXCEEDED'
+          },
+          { 
+            status: 429,
+            headers: rateLimitHeaders
+          }
+        );
+      }
+    } catch (rateLimitError) {
+      if (rateLimitError instanceof RateLimitError) {
+        return NextResponse.json(
+          { 
+            error: 'Rate limit exceeded',
+            message: `Too many requests. Try again in ${rateLimitError.result.headers['Retry-After']} seconds.`,
+            code: 'RATE_LIMIT_EXCEEDED'
+          },
+          { 
+            status: 429,
+            headers: rateLimitError.result.headers
+          }
+        );
+      }
+      // For other rate limit errors, log but continue (graceful degradation)
+      console.warn('[Proxy] Rate limit check failed, allowing request:', rateLimitError);
+    }
     
     // Check deployment mode from header
     const deploymentMode = request.headers.get('X-Deployment-Mode') || 'production';
@@ -204,9 +273,12 @@ export async function proxyRequest(
         hasApiKey: !!apiKey
       });
       
-      // Include tracking headers in response for client-side analytics
+      // Include tracking headers and rate limit headers in response for client-side analytics
       const responseHeaders = new Headers();
       Object.entries(trackingHeaders).forEach(([key, value]) => {
+        responseHeaders.set(key, value);
+      });
+      Object.entries(rateLimitHeaders).forEach(([key, value]) => {
         responseHeaders.set(key, value);
       });
       
@@ -219,7 +291,7 @@ export async function proxyRequest(
     // Handle successful responses
     const contentType = response.headers.get('content-type');
     
-    if (contentType?.includes('application/json')) {
+    if (contentType?.includes('application/json') && method !== 'HEAD') {
       const data = await response.json();
       
       // Track resource creation for free trial mode
@@ -246,9 +318,12 @@ export async function proxyRequest(
         }
       }
       
-      // Include tracking headers in response for client-side analytics
+      // Include tracking headers and rate limit headers in response for client-side analytics
       const responseHeaders = new Headers();
       Object.entries(trackingHeaders).forEach(([key, value]) => {
+        responseHeaders.set(key, value);
+      });
+      Object.entries(rateLimitHeaders).forEach(([key, value]) => {
         responseHeaders.set(key, value);
       });
       
@@ -257,10 +332,13 @@ export async function proxyRequest(
       // For non-JSON responses (e.g., file downloads)
       const data = await response.arrayBuffer();
       
-      // Include tracking headers in response
+      // Include tracking headers and rate limit headers in response
       const responseHeaders = new Headers();
       responseHeaders.set('Content-Type', contentType || 'application/octet-stream');
       Object.entries(trackingHeaders).forEach(([key, value]) => {
+        responseHeaders.set(key, value);
+      });
+      Object.entries(rateLimitHeaders).forEach(([key, value]) => {
         responseHeaders.set(key, value);
       });
       

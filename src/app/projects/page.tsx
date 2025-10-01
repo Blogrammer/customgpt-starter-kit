@@ -47,6 +47,7 @@
 
 import React, { useEffect, useState, Suspense, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { TurnstileGate } from '@/components/chat/TurnstileGate';
 import { 
   Bot, 
   Settings, 
@@ -506,8 +507,9 @@ function ProjectsPageContent() {
 
   return (
     <PageLayout>
-      <div className="h-[calc(100vh-4rem)] flex bg-background relative">
-        {/* Left Sidebar - Project List */}
+      <TurnstileGate>
+        <div className="h-[calc(100vh-4rem)] flex bg-background relative">
+          {/* Left Sidebar - Project List */}
         <div 
           ref={sidebarRef}
           style={{ width: `${sidebarWidth}px` }}
@@ -682,7 +684,8 @@ function ProjectsPageContent() {
             {renderSettingsContent()}
           </div>
         </div>
-      </div>
+        </div>
+      </TurnstileGate>
     </PageLayout>
   );
 }
