@@ -25,6 +25,7 @@ import { Shield, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { getVerificationService } from '@/lib/turnstile-verification';
 
 // Turnstile script URL
 const TURNSTILE_SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
@@ -434,44 +435,62 @@ export const TurnstileChallenge: React.FC<TurnstileProps> = ({
 
 /**
  * Hook for managing Turnstile verification state
- * 
+ *
  * Provides utilities for checking verification status,
- * caching tokens, and handling verification flow.
+ * caching tokens, and handling verification flow with session persistence.
  */
 export const useTurnstileVerification = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [currentToken, setCurrentToken] = useState<string | null>(null);
   const [lastVerified, setLastVerified] = useState<number | null>(null);
+  const verificationService = getVerificationService();
 
-  // Check if verification is still valid (5 minute cache)
-  const isVerificationValid = useCallback(() => {
-    if (!isVerified || !lastVerified || !currentToken) {
-      return false;
+  // Initialize from session storage on mount
+  useEffect(() => {
+    const sessionVerified = verificationService.isVerified();
+    if (sessionVerified) {
+      setIsVerified(true);
+      // We don't need to set currentToken since we're using session-based verification
     }
-    
-    const fiveMinutes = 5 * 60 * 1000;
-    return Date.now() - lastVerified < fiveMinutes;
-  }, [isVerified, lastVerified, currentToken]);
+  }, []);
+
+  // Check if verification is still valid (uses session duration)
+  const isVerificationValid = useCallback(() => {
+    return verificationService.isVerified();
+  }, []);
 
   // Handle successful verification
   const handleVerificationSuccess = useCallback(async (token: string) => {
     try {
+      // Check if verification is already cached (from TurnstileGate)
+      if (verificationService.isVerified()) {
+        console.log('[Turnstile] Verification already cached, skipping server call');
+        setCurrentToken(token);
+        setIsVerified(true);
+        setLastVerified(Date.now());
+        return;
+      }
+
       // Call server verification endpoint to cache the verification
       const response = await fetch('/api/turnstile/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, action: 'api-request' }),
+        body: JSON.stringify({ token, action: 'session-verification' }),
       });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setCurrentToken(token);
-          setIsVerified(true);
-          setLastVerified(Date.now());
-          console.log('[Turnstile] Server verification successful');
+          // Cache in session storage for longer duration
+          const success = await verificationService.verifyAndCache(token);
+          if (success) {
+            setCurrentToken(token);
+            setIsVerified(true);
+            setLastVerified(Date.now());
+            console.log('[Turnstile] Session verification successful');
+          }
         } else {
           console.error('[Turnstile] Server verification failed:', result);
           throw new Error(result.message || 'Verification failed');
@@ -493,6 +512,7 @@ export const useTurnstileVerification = () => {
     setCurrentToken(null);
     setIsVerified(false);
     setLastVerified(null);
+    verificationService.clearVerification();
   }, []);
 
   // Handle verification expiry

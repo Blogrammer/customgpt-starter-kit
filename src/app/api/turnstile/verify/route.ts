@@ -70,11 +70,24 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 // Token cache for replay prevention (in production, use Redis)
-const usedTokens = new Set<string>();
+// Allow tokens to be reused within 30 seconds to handle race conditions
+interface TokenEntry {
+  timestamp: number;
+  count: number;
+}
+
+const usedTokens = new Map<string, TokenEntry>();
 
 // Clean up old tokens every 10 minutes
 setInterval(() => {
-  usedTokens.clear();
+  const now = Date.now();
+  const thirtySeconds = 30 * 1000;
+
+  for (const [token, entry] of usedTokens.entries()) {
+    if (now - entry.timestamp > thirtySeconds) {
+      usedTokens.delete(token);
+    }
+  }
 }, 10 * 60 * 1000);
 
 /**
@@ -248,18 +261,31 @@ export async function POST(request: NextRequest) {
 
     const { token, action } = parseResult.data;
 
-    // Check for token replay (basic prevention)
-    if (usedTokens.has(token)) {
-      logVerificationAttempt(false, token, getClientIP(request), ['token-replay'], action);
-      
-      return NextResponse.json(
-        {
-          success: false,
-          errorCodes: ['timeout-or-duplicate'],
-          message: 'Token has already been used'
-        } satisfies VerifyErrorResponse,
-        { status: 400 }
-      );
+    // Check for token replay (allow reuse within 30 seconds)
+    const now = Date.now();
+    const thirtySeconds = 30 * 1000;
+    const existingEntry = usedTokens.get(token);
+
+    if (existingEntry) {
+      // Allow reuse within 30 seconds, but limit to 3 attempts
+      if (now - existingEntry.timestamp < thirtySeconds && existingEntry.count < 3) {
+        existingEntry.count++;
+        console.log(`[Turnstile] Token reused within 30s, attempt ${existingEntry.count}/3`);
+      } else {
+        logVerificationAttempt(false, token, getClientIP(request), ['token-replay'], action);
+
+        return NextResponse.json(
+          {
+            success: false,
+            errorCodes: ['timeout-or-duplicate'],
+            message: 'Token has already been used'
+          } satisfies VerifyErrorResponse,
+          { status: 400 }
+        );
+      }
+    } else {
+      // First time seeing this token
+      usedTokens.set(token, { timestamp: now, count: 1 });
     }
 
     // Get client IP
@@ -269,8 +295,11 @@ export async function POST(request: NextRequest) {
     const verificationResult = await verifyWithCloudflare(token, clientIP, action);
 
     if (verificationResult.success) {
-      // Mark token as used
-      usedTokens.add(token);
+      // Update token usage count (it was already added to the map above)
+      const entry = usedTokens.get(token);
+      if (entry) {
+        entry.count = Math.max(entry.count, 1); // Ensure at least 1
+      }
 
       // Cache the verification using the SAME identity system as rate limiter
       try {

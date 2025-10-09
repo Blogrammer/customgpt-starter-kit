@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { getVerificationService, getTurnstileConfig } from '@/lib/turnstile-verification';
 
 interface TurnstileTokenState {
   token: string | null;
@@ -26,20 +27,36 @@ export function useTurnstileToken() {
   });
 
   const tokenRef = useRef<string | null>(null);
+  const verificationService = getVerificationService();
+
+  // Initialize from session storage on mount
+  useEffect(() => {
+    const isSessionVerified = verificationService.isVerified();
+    if (isSessionVerified) {
+      setTokenState(prev => ({
+        ...prev,
+        isValid: true,
+      }));
+    }
+  }, []);
 
   /**
-   * Store a new Turnstile token
+   * Store a new Turnstile token with longer session duration
    */
   const setToken = useCallback((token: string) => {
-    const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes from now
-    
+    const config = getTurnstileConfig();
+    const expiresAt = Date.now() + config.sessionDuration; // Use session duration (default 1 hour)
+
     setTokenState({
       token,
       expiresAt,
       isValid: true,
     });
-    
+
     tokenRef.current = token;
+
+    // Also cache in verification service for session persistence
+    verificationService.setVerification(Date.now(), expiresAt);
   }, []);
 
   /**
@@ -51,20 +68,27 @@ export function useTurnstileToken() {
       expiresAt: null,
       isValid: false,
     });
-    
+
     tokenRef.current = null;
+    verificationService.clearVerification();
   }, []);
 
   /**
-   * Check if current token is valid
+   * Check if current token is valid (check both local state and session storage)
    */
   const isTokenValid = useCallback(() => {
+    // First check if session verification is still valid
+    if (verificationService.isVerified()) {
+      return true;
+    }
+
+    // Fallback to local state check
     const { token, expiresAt } = tokenState;
-    
+
     if (!token || !expiresAt) {
       return false;
     }
-    
+
     return Date.now() < expiresAt;
   }, [tokenState]);
 
@@ -75,14 +99,21 @@ export function useTurnstileToken() {
     if (isTokenValid()) {
       return tokenState.token;
     }
-    
+
     // Token is expired, clear it
     if (tokenState.token) {
       clearToken();
     }
-    
+
     return null;
   }, [tokenState, isTokenValid, clearToken]);
+
+  /**
+   * Check if verification is needed (for UI display)
+   */
+  const needsVerification = useCallback(() => {
+    return !isTokenValid();
+  }, [isTokenValid]);
 
   /**
    * Get headers with Turnstile token for API requests
@@ -141,6 +172,7 @@ export function useTurnstileToken() {
     setToken,
     clearToken,
     getValidToken,
+    needsVerification,
     getTurnstileHeaders,
     fetchWithTurnstile,
   };

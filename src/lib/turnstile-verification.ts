@@ -76,6 +76,7 @@ export interface TurnstileConfig {
   requiredForIPUsers: boolean;
   cacheDuration: number; // in milliseconds
   siteKey?: string;
+  sessionDuration: number; // in milliseconds (default: 1 hour)
 }
 
 /**
@@ -84,14 +85,16 @@ export interface TurnstileConfig {
 export function getTurnstileConfig(): TurnstileConfig {
   const enabled = process.env.TURNSTILE_ENABLED === 'true';
   const cacheSeconds = parseInt(process.env.TURNSTILE_CACHE_DURATION || '300');
+  const sessionHours = parseInt(process.env.TURNSTILE_SESSION_DURATION_HOURS || '1');
   const bypassAuthenticated = process.env.TURNSTILE_BYPASS_AUTHENTICATED !== 'false';
   const requiredForIPUsers = process.env.TURNSTILE_REQUIRED_FOR_IP_USERS !== 'false';
-  
+
   return {
     enabled,
     bypassAuthenticated,
     requiredForIPUsers,
     cacheDuration: Math.max(1, cacheSeconds) * 1000,
+    sessionDuration: Math.max(1, sessionHours) * 60 * 60 * 1000, // Convert hours to milliseconds
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   };
 }
@@ -389,5 +392,226 @@ export function getVerificationCacheStats() {
     validEntries,
     expiredEntries,
     cacheDurationMs: config.cacheDuration,
+  };
+}
+
+// ===== CLIENT-SIDE VERIFICATION SERVICE =====
+
+/**
+ * Client-side verification state interface
+ */
+interface ClientVerificationState {
+  verifiedAt: number;
+  expiresAt: number;
+  sessionId: string;
+  version: string;
+}
+
+/**
+ * Session-based verification service for client-side caching
+ * This persists verification status across tab changes but resets per browser session
+ */
+class VerificationService {
+  private static instance: VerificationService;
+  private sessionId: string;
+  private readonly STORAGE_KEY = 'turnstile_verification_session';
+  private readonly VERSION = '1.0';
+
+  private constructor() {
+    this.sessionId = this.generateSessionId();
+  }
+
+  static getInstance(): VerificationService {
+    if (!VerificationService.instance) {
+      VerificationService.instance = new VerificationService();
+    }
+    return VerificationService.instance;
+  }
+
+  private generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Store verification status in sessionStorage
+   */
+  setVerification(verifiedAt: number, expiresAt: number): void {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+
+    const state: ClientVerificationState = {
+      verifiedAt,
+      expiresAt,
+      sessionId: this.sessionId,
+      version: this.VERSION,
+    };
+
+    try {
+      sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn('[VerificationService] Failed to store verification in sessionStorage:', error);
+    }
+  }
+
+  /**
+   * Get current verification status from sessionStorage
+   */
+  getVerification(): ClientVerificationState | null {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const stored = sessionStorage.getItem(this.STORAGE_KEY);
+      if (!stored) return null;
+
+      const state: ClientVerificationState = JSON.parse(stored);
+
+      // Validate the stored state
+      if (state.version !== this.VERSION) {
+        this.clearVerification();
+        return null;
+      }
+
+      // Check if expired
+      if (Date.now() > state.expiresAt) {
+        this.clearVerification();
+        return null;
+      }
+
+      return state;
+    } catch (error) {
+      console.warn('[VerificationService] Failed to read verification from sessionStorage:', error);
+      this.clearVerification();
+      return null;
+    }
+  }
+
+  /**
+   * Check if user has valid verification
+   */
+  isVerified(): boolean {
+    const state = this.getVerification();
+    return state !== null && Date.now() < state.expiresAt;
+  }
+
+  /**
+   * Get time until verification expires (in seconds)
+   */
+  getTimeUntilExpiry(): number {
+    const state = this.getVerification();
+    if (!state) return 0;
+
+    const remainingMs = Math.max(0, state.expiresAt - Date.now());
+    return Math.floor(remainingMs / 1000);
+  }
+
+  /**
+   * Clear verification status
+   */
+  clearVerification(): void {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+
+    try {
+      sessionStorage.removeItem(this.STORAGE_KEY);
+    } catch (error) {
+      console.warn('[VerificationService] Failed to clear verification from sessionStorage:', error);
+    }
+  }
+
+  /**
+   * Verify and cache verification status
+   */
+  async verifyAndCache(token?: string): Promise<boolean> {
+    try {
+      // If already verified and not expired, return true
+      if (this.isVerified()) {
+        console.log('[VerificationService] Already verified, skipping token verification');
+        return true;
+      }
+
+      // If no token provided, we can't verify
+      if (!token) {
+        console.log('[VerificationService] No token provided for verification');
+        return false;
+      }
+
+      console.log('[VerificationService] Attempting to verify token with server');
+      // Attempt verification with server
+      const response = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, action: 'session-verification' }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const now = Date.now();
+          const config = getTurnstileConfig();
+          const expiresAt = now + config.sessionDuration;
+
+          console.log('[VerificationService] Token verified successfully, caching for', config.sessionDuration / (60 * 60 * 1000), 'hours');
+          this.setVerification(now, expiresAt);
+          return true;
+        } else {
+          console.warn('[VerificationService] Server verification failed:', result);
+          // If server says token already used, it might mean it's already cached
+          if (result.errorCodes?.includes('timeout-or-duplicate')) {
+            console.log('[VerificationService] Token already used, checking if verification is cached');
+            // Check again if verification got cached from a previous call
+            if (this.isVerified()) {
+              console.log('[VerificationService] Verification was cached from previous call');
+              return true;
+            }
+          }
+        }
+      } else {
+        console.warn('[VerificationService] Server verification request failed:', response.status, response.statusText);
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('[VerificationService] Verification failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Background verification - attempt to verify without user interaction
+   */
+  async backgroundVerify(): Promise<boolean> {
+    // Only attempt background verification if we don't have a valid session
+    if (this.isVerified()) {
+      return true;
+    }
+
+    // Try to verify with any existing token
+    // This would typically be called when a Turnstile widget is available
+    return false;
+  }
+}
+
+/**
+ * Get the client-side verification service instance
+ */
+export function getVerificationService(): VerificationService {
+  return VerificationService.getInstance();
+}
+
+/**
+ * Client-side verification check
+ * Use this in components to determine if verification is needed
+ */
+export function useClientVerification() {
+  const service = getVerificationService();
+
+  return {
+    isVerified: () => service.isVerified(),
+    getTimeUntilExpiry: () => service.getTimeUntilExpiry(),
+    verifyAndCache: (token?: string) => service.verifyAndCache(token),
+    clearVerification: () => service.clearVerification(),
   };
 }

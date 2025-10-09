@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import TurnstileChallenge, { useTurnstileVerification } from '../ui/Turnstile';
+import { getVerificationService } from '@/lib/turnstile-verification';
 
 interface TurnstileGateProps {
   /** Child components to render after verification */
@@ -93,6 +94,7 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
     handleVerificationExpiry
   } = useTurnstileVerification();
 
+  const verificationService = getVerificationService();
   const [showChallenge, setShowChallenge] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,34 +134,44 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
   // Handle successful verification
   const handleSuccess = useCallback(async (token: string) => {
     try {
-      await handleVerificationSuccess(token);
-      setShowChallenge(false);
-      setError(null);
-      
-      // Store token for API client usage
-      if (typeof window !== 'undefined') {
-        const tokenData = {
-          token,
-          expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
-          timestamp: Date.now()
-        };
-        
-        try {
-          sessionStorage.setItem('customgpt.turnstileToken', JSON.stringify(tokenData));
-          console.log('[TurnstileGate] Token stored for API usage');
-        } catch (e) {
-          console.warn('[TurnstileGate] Failed to store token:', e);
+      console.log('[TurnstileGate] Starting verification process for token');
+
+      // Use the verification service to cache the verification (only calls server if not cached)
+      const success = await verificationService.verifyAndCache(token);
+      console.log('[TurnstileGate] Verification service result:', success);
+
+      if (success) {
+        // Update the hook state (this will check if already verified and skip server call)
+        await handleVerificationSuccess(token);
+        setShowChallenge(false);
+        setError(null);
+
+        // Store token for API client usage (legacy compatibility)
+        if (typeof window !== 'undefined') {
+          const tokenData = {
+            token,
+            expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour
+            timestamp: Date.now()
+          };
+
+          try {
+            sessionStorage.setItem('customgpt.turnstileToken', JSON.stringify(tokenData));
+          } catch (e) {
+            console.warn('[TurnstileGate] Failed to store token:', e);
+          }
         }
+
+        onVerificationChange?.(true, token);
+        toast.success('Human verification complete!');
+      } else {
+        throw new Error('Failed to verify token');
       }
-      
-      onVerificationChange?.(true, token);
-      toast.success('Human verification complete!');
     } catch (error) {
       console.error('[TurnstileGate] Verification failed:', error);
       setError(error instanceof Error ? error.message : 'Verification failed');
       onVerificationChange?.(false);
     }
-  }, [handleVerificationSuccess, onVerificationChange]);
+  }, [handleVerificationSuccess, onVerificationChange, verificationService]);
 
   // Handle verification error
   const handleError = useCallback((error: string) => {
