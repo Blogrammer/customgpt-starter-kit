@@ -53,7 +53,8 @@ async function fetchAgentsFromAPI(
       name: project.project_name || project.name || 'Unnamed Agent',
       sitemap: project.sitemap_path,
       createdAt: project.created_at,
-      status: project.status || 'active'
+      status: project.status || 'active',
+      is_chat_active: project.is_chat_active
     })).filter((p: any) => !!p.id);
 
     const totalPages = Number(data?.data?.last_page) || 0;

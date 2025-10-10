@@ -7,18 +7,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
-  Plus,
-  Trash2,
-  Edit,
-  Save,
-  X,
   AlertCircle,
-  CheckCircle,
   Clock,
   Shield,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -28,6 +23,8 @@ import { cn } from '@/lib/utils';
 interface Agent {
   id: string;
   name: string;
+  status?: string;
+  is_chat_active?: boolean;
   rateLimitConfig: {
     limits: {
       queriesPerMinute?: number;
@@ -57,9 +54,9 @@ export function AgentRateLimits() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [editingAgent, setEditingAgent] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<AgentConfig | null>(null);
+  const [editingConfigs, setEditingConfigs] = useState<Map<string, AgentConfig>>(new Map());
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+  const [savingAgents, setSavingAgents] = useState<Set<string>>(new Set());
 
   // Fetch agents with search and pagination
   const fetchAgents = useCallback(async (page: number, search?: string) => {
@@ -92,7 +89,7 @@ export function AgentRateLimits() {
   // Initial load
   useEffect(() => {
     fetchAgents(currentPage, searchTerm);
-  }, [currentPage]);
+  }, [currentPage, fetchAgents]);
 
   // Handle search with debounce
   const handleSearch = (value: string) => {
@@ -110,43 +107,55 @@ export function AgentRateLimits() {
     setSearchDebounce(timeout);
   };
 
-  // Start editing an agent
-  const startEdit = (agent: Agent) => {
-    setEditingAgent(agent.id);
-    setEditForm({
+  // Get or initialize config for an agent
+  const getAgentConfig = (agent: Agent): AgentConfig => {
+    const existing = editingConfigs.get(agent.id);
+    if (existing) return existing;
+
+    return {
       agentId: agent.id,
       agentName: agent.name,
-      limits: agent.rateLimitConfig?.limits || {
-        queriesPerHour: 10,
-        queriesPerDay: 100,
-        queriesPerMonth: 1000
-      },
-      enabled: agent.rateLimitConfig?.enabled ?? true
-    });
+      limits: agent.rateLimitConfig?.limits || {},
+      enabled: agent.rateLimitConfig?.enabled ?? false
+    };
   };
 
-  // Cancel editing
-  const cancelEdit = () => {
-    setEditingAgent(null);
-    setEditForm(null);
+  // Update config for an agent
+  const updateAgentConfig = (agentId: string, updates: Partial<AgentConfig>) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+
+    const current = getAgentConfig(agent);
+    const updated = { ...current, ...updates };
+    setEditingConfigs(prev => new Map(prev).set(agentId, updated));
   };
 
   // Save agent configuration
-  const saveConfig = async () => {
-    if (!editForm) return;
+  const saveConfig = async (agentId: string) => {
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+
+    const config = getAgentConfig(agent);
+
+    setSavingAgents(prev => new Set(prev).add(agentId));
 
     try {
       const response = await fetch('/api/admin/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(config)
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Rate limits saved for ${editForm.agentName}`);
-        cancelEdit();
+        toast.success(`Rate limits saved for ${config.agentName}`);
+        // Remove from editing map
+        setEditingConfigs(prev => {
+          const next = new Map(prev);
+          next.delete(agentId);
+          return next;
+        });
         fetchAgents(currentPage, searchTerm);
       } else {
         toast.error(data.error || 'Failed to save configuration');
@@ -154,31 +163,12 @@ export function AgentRateLimits() {
     } catch (error) {
       console.error('Failed to save config:', error);
       toast.error('Failed to save configuration');
-    }
-  };
-
-  // Delete agent configuration
-  const deleteConfig = async (agentId: string, agentName: string) => {
-    if (!confirm(`Remove rate limit configuration for ${agentName}?`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/admin/agents/${agentId}`, {
-        method: 'DELETE'
+    } finally {
+      setSavingAgents(prev => {
+        const next = new Set(prev);
+        next.delete(agentId);
+        return next;
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success(`Rate limits removed for ${agentName}`);
-        fetchAgents(currentPage, searchTerm);
-      } else {
-        toast.error(data.error || 'Failed to delete configuration');
-      }
-    } catch (error) {
-      console.error('Failed to delete config:', error);
-      toast.error('Failed to delete configuration');
     }
   };
 
@@ -250,38 +240,58 @@ export function AgentRateLimits() {
           </div>
         ) : (
           <div className="space-y-4">
-            {agents.map((agent) => (
-              <div
-                key={agent.id}
-                className={cn(
-                  "p-4 rounded-lg border transition-colors",
-                  editingAgent === agent.id
-                    ? "bg-accent/10 border-primary"
-                    : "bg-background border-border hover:border-primary/50"
-                )}
-              >
-                {editingAgent === agent.id && editForm ? (
-                  // Edit Mode
+            {agents.map((agent) => {
+              const config = getAgentConfig(agent);
+              const isSaving = savingAgents.has(agent.id);
+
+              return (
+                <div
+                  key={agent.id}
+                  className="p-4 rounded-lg border bg-background border-border"
+                >
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h3 className="font-medium text-foreground">{agent.name}</h3>
-                        <p className="text-xs text-muted-foreground">ID: {agent.id}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-medium text-foreground">{agent.name}</h3>
+                          {agent.is_chat_active ? (
+                            <span className="px-2.5 py-1 text-xs font-medium bg-success/20 text-success rounded-md border border-success/30">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 text-xs font-medium bg-destructive/20 text-destructive rounded-md border border-destructive/30">
+                              Inactive
+                            </span>
+                          )}
+                          {agent.rateLimitConfig?.enabled && (
+                            <span className="px-2.5 py-1 text-xs font-medium bg-warning/20 text-warning rounded-md border border-warning/30">
+                              Rate Limit ON
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">ID: {agent.id}</p>
                       </div>
+
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={cancelEdit}
+                          onClick={() => resetCounters(agent.id, agent.name)}
+                          title="Reset counters"
+                          disabled={isSaving}
                         >
-                          <X className="w-4 h-4" />
-                          Cancel
+                          <Clock className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
-                          onClick={saveConfig}
+                          onClick={() => saveConfig(agent.id)}
+                          disabled={isSaving}
                         >
-                          <Save className="w-4 h-4 mr-1" />
+                          {isSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          ) : (
+                            <Save className="w-4 h-4 mr-1" />
+                          )}
                           Save
                         </Button>
                       </div>
@@ -295,16 +305,16 @@ export function AgentRateLimits() {
                         <input
                           type="number"
                           min="0"
-                          value={editForm.limits.queriesPerMinute || ''}
-                          onChange={(e) => setEditForm({
-                            ...editForm,
+                          value={config.limits.queriesPerMinute || ''}
+                          onChange={(e) => updateAgentConfig(agent.id, {
                             limits: {
-                              ...editForm.limits,
+                              ...config.limits,
                               queriesPerMinute: e.target.value ? parseInt(e.target.value) : undefined
                             }
                           })}
                           placeholder="No limit"
-                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground"
+                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground text-sm"
+                          disabled={isSaving}
                         />
                       </div>
 
@@ -315,16 +325,16 @@ export function AgentRateLimits() {
                         <input
                           type="number"
                           min="0"
-                          value={editForm.limits.queriesPerHour || ''}
-                          onChange={(e) => setEditForm({
-                            ...editForm,
+                          value={config.limits.queriesPerHour || ''}
+                          onChange={(e) => updateAgentConfig(agent.id, {
                             limits: {
-                              ...editForm.limits,
+                              ...config.limits,
                               queriesPerHour: e.target.value ? parseInt(e.target.value) : undefined
                             }
                           })}
                           placeholder="No limit"
-                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground"
+                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground text-sm"
+                          disabled={isSaving}
                         />
                       </div>
 
@@ -335,16 +345,16 @@ export function AgentRateLimits() {
                         <input
                           type="number"
                           min="0"
-                          value={editForm.limits.queriesPerDay || ''}
-                          onChange={(e) => setEditForm({
-                            ...editForm,
+                          value={config.limits.queriesPerDay || ''}
+                          onChange={(e) => updateAgentConfig(agent.id, {
                             limits: {
-                              ...editForm.limits,
+                              ...config.limits,
                               queriesPerDay: e.target.value ? parseInt(e.target.value) : undefined
                             }
                           })}
                           placeholder="No limit"
-                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground"
+                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground text-sm"
+                          disabled={isSaving}
                         />
                       </div>
 
@@ -355,16 +365,16 @@ export function AgentRateLimits() {
                         <input
                           type="number"
                           min="0"
-                          value={editForm.limits.queriesPerMonth || ''}
-                          onChange={(e) => setEditForm({
-                            ...editForm,
+                          value={config.limits.queriesPerMonth || ''}
+                          onChange={(e) => updateAgentConfig(agent.id, {
                             limits: {
-                              ...editForm.limits,
+                              ...config.limits,
                               queriesPerMonth: e.target.value ? parseInt(e.target.value) : undefined
                             }
                           })}
                           placeholder="No limit"
-                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground"
+                          className="w-full px-3 py-1.5 bg-background border border-border rounded text-foreground text-sm"
+                          disabled={isSaving}
                         />
                       </div>
                     </div>
@@ -373,90 +383,19 @@ export function AgentRateLimits() {
                       <input
                         type="checkbox"
                         id={`enabled-${agent.id}`}
-                        checked={editForm.enabled}
-                        onChange={(e) => setEditForm({
-                          ...editForm,
-                          enabled: e.target.checked
-                        })}
+                        checked={config.enabled}
+                        onChange={(e) => updateAgentConfig(agent.id, { enabled: e.target.checked })}
                         className="rounded border-border"
+                        disabled={isSaving}
                       />
                       <label htmlFor={`enabled-${agent.id}`} className="text-sm text-foreground">
                         Enable rate limiting for this agent
                       </label>
                     </div>
                   </div>
-                ) : (
-                  // View Mode
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-medium text-foreground">{agent.name}</h3>
-                        {agent.rateLimitConfig?.enabled && (
-                          <span className="px-2 py-0.5 text-xs bg-success/10 text-success rounded-full">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">ID: {agent.id}</p>
-                      
-                      {agent.rateLimitConfig && (
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          {agent.rateLimitConfig.limits.queriesPerMinute && (
-                            <span>{agent.rateLimitConfig.limits.queriesPerMinute}/min</span>
-                          )}
-                          {agent.rateLimitConfig.limits.queriesPerHour && (
-                            <span>{agent.rateLimitConfig.limits.queriesPerHour}/hour</span>
-                          )}
-                          {agent.rateLimitConfig.limits.queriesPerDay && (
-                            <span>{agent.rateLimitConfig.limits.queriesPerDay}/day</span>
-                          )}
-                          {agent.rateLimitConfig.limits.queriesPerMonth && (
-                            <span>{agent.rateLimitConfig.limits.queriesPerMonth}/month</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {agent.rateLimitConfig && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => resetCounters(agent.id, agent.name)}
-                            title="Reset counters"
-                          >
-                            <Clock className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => deleteConfig(agent.id, agent.name)}
-                            title="Remove configuration"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        size="sm"
-                        variant={agent.rateLimitConfig ? "ghost" : "default"}
-                        onClick={() => startEdit(agent)}
-                      >
-                        {agent.rateLimitConfig ? (
-                          <Edit className="w-4 h-4" />
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4 mr-1" />
-                            Configure
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -467,7 +406,7 @@ export function AgentRateLimits() {
               size="sm"
               variant="outline"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -480,7 +419,7 @@ export function AgentRateLimits() {
               size="sm"
               variant="outline"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -499,6 +438,7 @@ export function AgentRateLimits() {
               <li>• Users are identified by JWT token, session, or IP address</li>
               <li>• Counters reset automatically at the end of each time window</li>
               <li>• Leave a field empty to have no limit for that time window</li>
+              <li>• Click "Save" after making changes to persist the configuration</li>
             </ul>
           </div>
         </div>
