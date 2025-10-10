@@ -201,6 +201,26 @@
   --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
+/* Custom scrollbar for overflow containers (tabs, lists) */
+.custom-scrollbar {
+	scrollbar-width: thin; /* Firefox */
+	scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+	height: 8px; /* horizontal */
+	width: 8px;  /* vertical */
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background-color: hsl(var(--muted-foreground) / 0.35);
+	border-radius: 9999px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+	background-color: hsl(var(--muted-foreground) / 0.6);
+}
+
 /**
  * CSS Reset
  * 

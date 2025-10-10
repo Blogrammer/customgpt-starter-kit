@@ -876,6 +876,30 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         isAuthError: error instanceof Error && (error.message.includes('403') || error.message.includes('unauthorized'))
       });
       console.error('Failed to send message:', error);
+
+      // Show clearer toast for rate limit exceeded
+      try {
+        const anyErr: any = error as any;
+        const status = anyErr?.status;
+        const data = anyErr?.data;
+        if (status === 429) {
+          const retryAfter = data?.details?.retryAfter ?? data?.retryAfter;
+          const window = data?.details?.window ?? 'minute';
+          const limit = data?.details?.limit;
+          toast.error('Rate limit exceeded', {
+            description: retryAfter
+              ? `Too many queries for this agent. Try again in ${retryAfter} seconds.`
+              : `You have hit the ${window} limit${limit ? ` (${limit})` : ''}. Please wait before retrying.`,
+            duration: 5000,
+          });
+          return;
+        }
+      } catch {}
+
+      toast.error('Failed to send', {
+        description: error instanceof Error ? error.message : 'Please try again',
+        duration: 4000,
+      });
     }
   };
   

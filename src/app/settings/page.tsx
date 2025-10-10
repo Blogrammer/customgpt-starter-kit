@@ -19,7 +19,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Settings,
   Sun,
   Moon,
@@ -32,6 +32,7 @@ import {
   Home,
   Users,
   BarChart3,
+  Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +48,8 @@ import { AdminUsers } from '@/components/settings/admin/AdminUsers';
 import { AdminConfiguration } from '@/components/settings/admin/AdminConfiguration';
 import { AdminAnalytics } from '@/components/settings/admin/AdminAnalytics';
 import { AdminDemo } from '@/components/settings/admin/AdminDemo';
+import { AgentRateLimits } from '@/components/settings/admin/AgentRateLimits';
+import { IPManagement } from '@/components/settings/admin/IPManagement';
 
 /**
  * Settings Page Component
@@ -54,7 +57,7 @@ import { AdminDemo } from '@/components/settings/admin/AdminDemo';
  * Settings interface for theme and viewing server status
  */
 type SettingsTab = 'general' | 'rate-limiting';
-type RateLimitingTab = 'dashboard' | 'users' | 'configuration' | 'analytics' | 'demo';
+type RateLimitingTab = 'dashboard' | 'users' | 'configuration' | 'analytics' | 'demo' | 'agents' | 'ip-management';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -112,7 +115,7 @@ export default function SettingsPage() {
     <PageLayout showMobileNavigation={isMobile} pageTitle="Settings">
       <div className={cn(
         "h-full flex flex-col",
-        isMobile ? "bg-background" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        isMobile ? "bg-background" : "max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       )}>
         {/* Mobile Header */}
         {isMobile && (
@@ -594,10 +597,12 @@ function RateLimitingContent({
 }: RateLimitingContentProps) {
   const rateLimitingTabs = [
     { id: 'dashboard' as RateLimitingTab, name: 'Dashboard', icon: Home },
+    { id: 'agents' as RateLimitingTab, name: 'Agents', icon: Shield },
+    { id: 'ip-management' as RateLimitingTab, name: 'IP Management', icon: Ban },
     { id: 'users' as RateLimitingTab, name: 'Users', icon: Users },
     { id: 'configuration' as RateLimitingTab, name: 'Configuration', icon: Settings },
     { id: 'analytics' as RateLimitingTab, name: 'Analytics', icon: BarChart3 },
-    { id: 'demo' as RateLimitingTab, name: 'Playground', icon: Shield },
+    { id: 'demo' as RateLimitingTab, name: 'Playground', icon: Activity },
   ];
 
   return (
@@ -605,7 +610,7 @@ function RateLimitingContent({
       {/* Rate Limiting Sub-Tab Navigation */}
       <div className="border-b border-border">
         <nav className={cn(
-          "flex space-x-8 overflow-x-auto",
+          "flex space-x-8 overflow-x-auto custom-scrollbar",
           isMobile ? "px-0" : ""
         )}>
           {rateLimitingTabs.map((tab) => (
@@ -633,6 +638,8 @@ function RateLimitingContent({
         isMobile ? "space-y-4" : "space-y-6"
       )}>
         {activeRateLimitingTab === 'dashboard' && <RateLimitingSettings />}
+        {activeRateLimitingTab === 'agents' && <AgentRateLimits />}
+        {activeRateLimitingTab === 'ip-management' && <IPManagement />}
         {activeRateLimitingTab === 'users' && <AdminUsers />}
         {activeRateLimitingTab === 'configuration' && <AdminConfiguration />}
         {activeRateLimitingTab === 'analytics' && <AdminAnalytics />}
