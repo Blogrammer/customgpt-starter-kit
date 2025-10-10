@@ -74,11 +74,83 @@ async function fetchAgentsFromAPI(
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
+    const fetchAll = url.searchParams.get('fetchAll') === 'true';
     const page = parseInt(url.searchParams.get('page') || '1');
     const search = url.searchParams.get('search') || undefined;
     const withConfig = url.searchParams.get('withConfig') === 'true';
 
-    // Fetch agents from CustomGPT API
+    // If fetchAll is requested, get all agents across all pages
+    if (fetchAll) {
+      // First, fetch page 1 to get total pages
+      const { agents: firstPageAgents, totalPages } = await fetchAgentsFromAPI(1, search);
+      
+      if (totalPages <= 1) {
+        // Only one page, return immediately
+        let agentConfigs: AgentRateLimitConfig[] = [];
+        if (withConfig) {
+          agentConfigs = await getAllAgentRateLimits();
+        }
+
+        const mergedAgents = firstPageAgents.map(agent => {
+          const config = agentConfigs.find(c => c.agentId === agent.id);
+          return {
+            ...agent,
+            rateLimitConfig: config || null
+          };
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            agents: mergedAgents,
+            total: mergedAgents.length
+          }
+        });
+      }
+
+      // Fetch remaining pages in parallel
+      const pagePromises = [];
+      for (let page = 2; page <= totalPages; page++) {
+        pagePromises.push(fetchAgentsFromAPI(page, search));
+      }
+
+      const remainingPages = await Promise.all(pagePromises);
+      const allAgents = [
+        ...firstPageAgents,
+        ...remainingPages.flatMap(result => result.agents)
+      ];
+
+      // Merge with rate limit configurations
+      let agentConfigs: AgentRateLimitConfig[] = [];
+      if (withConfig) {
+        agentConfigs = await getAllAgentRateLimits();
+      }
+
+      const mergedAgents = allAgents.map(agent => {
+        const config = agentConfigs.find(c => c.agentId === agent.id);
+        return {
+          ...agent,
+          rateLimitConfig: config || null
+        };
+      });
+
+      // Sort: Active first, then inactive
+      mergedAgents.sort((a, b) => {
+        if (a.is_chat_active && !b.is_chat_active) return -1;
+        if (!a.is_chat_active && b.is_chat_active) return 1;
+        return 0;
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          agents: mergedAgents,
+          total: mergedAgents.length
+        }
+      });
+    }
+
+    // Normal paginated response
     const { agents, totalPages, totalCount } = await fetchAgentsFromAPI(page, search);
 
     // If requested, merge with rate limit configurations

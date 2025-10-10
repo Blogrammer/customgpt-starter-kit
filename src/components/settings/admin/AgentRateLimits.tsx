@@ -49,21 +49,25 @@ interface AgentConfig {
 }
 
 export function AgentRateLimits() {
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [allAgents, setAllAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [editingConfigs, setEditingConfigs] = useState<Map<string, AgentConfig>>(new Map());
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
   const [savingAgents, setSavingAgents] = useState<Set<string>>(new Set());
 
-  // Fetch agents with search and pagination
-  const fetchAgents = useCallback(async (page: number, search?: string) => {
+  // Pagination for display (client-side after fetching all)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Fetch ALL agents in one go
+  const fetchAllAgents = useCallback(async (search?: string) => {
     try {
       setLoading(true);
+
       const params = new URLSearchParams({
-        page: page.toString(),
+        fetchAll: 'true',
         withConfig: 'true'
       });
       
@@ -75,8 +79,9 @@ export function AgentRateLimits() {
       const data = await response.json();
 
       if (data.success) {
-        setAgents(data.data.agents);
-        setTotalPages(data.data.pagination.totalPages);
+        // Agents are already sorted (active first) by the backend
+        setAllAgents(data.data.agents);
+        setCurrentPage(1);
       }
     } catch (error) {
       console.error('Failed to fetch agents:', error);
@@ -86,10 +91,10 @@ export function AgentRateLimits() {
     }
   }, []);
 
-  // Initial load
+  // Initial load - fetch all agents
   useEffect(() => {
-    fetchAgents(currentPage, searchTerm);
-  }, [currentPage, fetchAgents]);
+    fetchAllAgents();
+  }, [fetchAllAgents]);
 
   // Handle search with debounce
   const handleSearch = (value: string) => {
@@ -100,12 +105,31 @@ export function AgentRateLimits() {
     }
 
     const timeout = setTimeout(() => {
-      setCurrentPage(1);
-      fetchAgents(1, value);
+      fetchAllAgents(value);
     }, 300);
 
     setSearchDebounce(timeout);
   };
+
+  // Filter and paginate agents
+  const filteredAgents = allAgents.filter(agent => {
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesName = agent.name.toLowerCase().includes(searchLower);
+      const matchesId = agent.id.toLowerCase().includes(searchLower);
+      if (!matchesName && !matchesId) return false;
+    }
+
+    // Apply active/inactive filter
+    if (activeFilter === 'active') return agent.is_chat_active;
+    if (activeFilter === 'inactive') return !agent.is_chat_active;
+    return true;
+  });
+
+  const totalPages = Math.ceil(filteredAgents.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedAgents = filteredAgents.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
   // Get or initialize config for an agent
   const getAgentConfig = (agent: Agent): AgentConfig => {
@@ -122,7 +146,7 @@ export function AgentRateLimits() {
 
   // Update config for an agent
   const updateAgentConfig = (agentId: string, updates: Partial<AgentConfig>) => {
-    const agent = agents.find(a => a.id === agentId);
+    const agent = allAgents.find(a => a.id === agentId);
     if (!agent) return;
 
     const current = getAgentConfig(agent);
@@ -132,7 +156,7 @@ export function AgentRateLimits() {
 
   // Save agent configuration
   const saveConfig = async (agentId: string) => {
-    const agent = agents.find(a => a.id === agentId);
+    const agent = allAgents.find(a => a.id === agentId);
     if (!agent) return;
 
     const config = getAgentConfig(agent);
@@ -156,7 +180,7 @@ export function AgentRateLimits() {
           next.delete(agentId);
           return next;
         });
-        fetchAgents(currentPage, searchTerm);
+        fetchAllAgents(searchTerm);
       } else {
         toast.error(data.error || 'Failed to save configuration');
       }
@@ -214,6 +238,52 @@ export function AgentRateLimits() {
           </div>
         </div>
 
+        {/* Filter Buttons */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => {
+              setActiveFilter('all');
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              activeFilter === 'all'
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            All ({allAgents.length})
+          </button>
+          <button
+            onClick={() => {
+              setActiveFilter('active');
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              activeFilter === 'active'
+                ? "bg-success text-white"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            Active ({allAgents.filter(a => a.is_chat_active).length})
+          </button>
+          <button
+            onClick={() => {
+              setActiveFilter('inactive');
+              setCurrentPage(1);
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              activeFilter === 'inactive'
+                ? "bg-destructive text-white"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            Inactive ({allAgents.filter(a => !a.is_chat_active).length})
+          </button>
+        </div>
+
         {/* Search Bar */}
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -231,7 +301,7 @@ export function AgentRateLimits() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        ) : agents.length === 0 ? (
+        ) : paginatedAgents.length === 0 ? (
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
@@ -240,7 +310,7 @@ export function AgentRateLimits() {
           </div>
         ) : (
           <div className="space-y-4">
-            {agents.map((agent) => {
+            {paginatedAgents.map((agent) => {
               const config = getAgentConfig(agent);
               const isSaving = savingAgents.has(agent.id);
 
