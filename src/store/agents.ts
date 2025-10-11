@@ -345,6 +345,9 @@ export const useAgentStore = create<AgentStore>()(
         // Clear all messages from the previous agent
         messageStore.clearMessages();
         
+        // Clear any error state from the previous agent
+        messageStore.clearError();
+        
         // Fetch agent settings to get avatar and other details
         try {
           const client = getClient();
