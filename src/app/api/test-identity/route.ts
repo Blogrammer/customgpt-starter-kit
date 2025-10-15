@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIdentityKey, getIdentityConfig } from '@/lib/identity';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Test endpoint for identity extraction
  * GET /api/test-identity - Returns the extracted identity key

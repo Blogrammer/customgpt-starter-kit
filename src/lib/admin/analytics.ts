@@ -299,15 +299,7 @@ export async function getAnalytics(): Promise<AnalyticsData> {
       return acc;
     }, { jwt: 0, session: 0, ip: 0 });
 
-    // Generate realistic hourly distribution (24 hours)
-    const hourlyDistribution = generateHourlyDistribution();
-    
-    // Generate realistic top routes
-    const topRoutes = generateTopRoutes();
-    
-    // Generate realistic trends (last 24 hours)
-    const trends = generateTrends();
-    
+    // Return only real data - no fake/generated data
     return {
       totalUsers: allUsers.totalCount,
       activeUsers,
@@ -315,9 +307,9 @@ export async function getAnalytics(): Promise<AnalyticsData> {
       requestsPerMinute: totalRequests,
       topUsers,
       usageByType,
-      hourlyDistribution,
-      topRoutes,
-      trends,
+      hourlyDistribution: [], // Real analytics not implemented yet
+      topRoutes: [], // Real analytics not implemented yet
+      trends: [], // Real analytics not implemented yet
     };
   } catch (error) {
     console.error('[ADMIN_ANALYTICS] Error getting analytics:', error);
@@ -325,87 +317,9 @@ export async function getAnalytics(): Promise<AnalyticsData> {
   }
 }
 
-/**
- * Generate realistic hourly distribution based on typical usage patterns
- */
-function generateHourlyDistribution() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  
-  // Typical usage pattern: low at night, peak during business hours
-  const hourlyPattern = [
-    0.1, 0.05, 0.05, 0.05, 0.1, 0.2,  // 0-5: Very low (night)
-    0.4, 0.6, 0.8, 0.9, 1.0, 1.0,     // 6-11: Morning ramp-up
-    0.9, 0.8, 0.7, 0.6, 0.8, 0.9,     // 12-17: Afternoon dip then evening
-    0.7, 0.5, 0.3, 0.2, 0.15, 0.1     // 18-23: Evening decline
-  ];
-  
-  return Array.from({ length: 24 }, (_, hour) => {
-    const baseRequests = Math.floor(hourlyPattern[hour] * 50 + Math.random() * 20);
-    const blockedRequests = Math.floor(baseRequests * (0.1 + Math.random() * 0.2));
-    
-    return {
-      hour,
-      requests: baseRequests,
-      blocked: blockedRequests,
-    };
-  });
-}
-
-/**
- * Generate realistic top routes
- */
-function generateTopRoutes() {
-  const routes = [
-    { route: '/api/proxy/projects', baseRequests: 120, avgTime: 45 },
-    { route: '/api/proxy/user', baseRequests: 80, avgTime: 30 },
-    { route: '/api/proxy/chat', baseRequests: 200, avgTime: 120 },
-    { route: '/api/proxy/upload', baseRequests: 40, avgTime: 200 },
-    { route: '/api/admin/test', baseRequests: 60, avgTime: 25 },
-    { route: '/api/proxy/sources', baseRequests: 30, avgTime: 80 },
-  ];
-  
-  return routes.map(route => ({
-    route: route.route,
-    requests: route.baseRequests + Math.floor(Math.random() * 40),
-    blocked: Math.floor(route.baseRequests * (0.05 + Math.random() * 0.15)),
-    averageResponseTime: route.avgTime + Math.floor(Math.random() * 20),
-  })).sort((a, b) => b.requests - a.requests);
-}
-
-/**
- * Generate realistic trends for the last 24 hours
- */
-function generateTrends() {
-  const now = Date.now();
-  const trends = [];
-  
-  for (let i = 23; i >= 0; i--) {
-    const timestamp = new Date(now - i * 3600000);
-    const hour = timestamp.getHours();
-    
-    // Use similar pattern as hourly distribution
-    const hourlyPattern = [
-      0.1, 0.05, 0.05, 0.05, 0.1, 0.2,  // 0-5: Very low (night)
-      0.4, 0.6, 0.8, 0.9, 1.0, 1.0,     // 6-11: Morning ramp-up
-      0.9, 0.8, 0.7, 0.6, 0.8, 0.9,     // 12-17: Afternoon dip then evening
-      0.7, 0.5, 0.3, 0.2, 0.15, 0.1     // 18-23: Evening decline
-    ];
-    
-    const baseRequests = Math.floor(hourlyPattern[hour] * 30 + Math.random() * 15);
-    const blockedRequests = Math.floor(baseRequests * (0.1 + Math.random() * 0.2));
-    const users = Math.floor(baseRequests * (0.3 + Math.random() * 0.4));
-    
-    trends.push({
-      timestamp: timestamp.toISOString(),
-      requests: baseRequests,
-      blocked: blockedRequests,
-      users: users,
-    });
-  }
-  
-  return trends;
-}
+// Fake data generation functions removed
+// Real analytics tracking would need to be implemented separately
+// by logging requests to Redis with timestamps and route information
 
 /**
  * Reset user counters

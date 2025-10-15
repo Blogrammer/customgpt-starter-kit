@@ -6,6 +6,8 @@ import {
   getAgentUsageStats
 } from '@/lib/agent-rate-limiter';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { agentId: string } }
@@ -16,11 +18,7 @@ export async function GET(
     const includeStats = url.searchParams.get('includeStats') === 'true';
 
     const config = await getAgentRateLimit(agentId);
-    
-    let stats = null;
-    if (includeStats) {
-      stats = await getAgentUsageStats(agentId);
-    }
+    const stats = await getAgentUsageStats(agentId);
 
     return NextResponse.json({
       success: true,

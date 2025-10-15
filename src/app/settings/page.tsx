@@ -46,7 +46,8 @@ import { RateLimitingSettings } from '@/components/settings/RateLimitingSettings
 import { AdminDashboard } from '@/components/settings/admin/AdminDashboard';
 import { AdminUsers } from '@/components/settings/admin/AdminUsers';
 import { AdminConfiguration } from '@/components/settings/admin/AdminConfiguration';
-import { AdminAnalytics } from '@/components/settings/admin/AdminAnalytics';
+// AdminAnalytics removed - was showing fake/generated data
+// import { AdminAnalytics } from '@/components/settings/admin/AdminAnalytics';
 import { AdminDemo } from '@/components/settings/admin/AdminDemo';
 import { AgentRateLimits } from '@/components/settings/admin/AgentRateLimits';
 import { IPManagement } from '@/components/settings/admin/IPManagement';
@@ -57,7 +58,7 @@ import { IPManagement } from '@/components/settings/admin/IPManagement';
  * Settings interface for theme and viewing server status
  */
 type SettingsTab = 'general' | 'rate-limiting';
-type RateLimitingTab = 'dashboard' | 'users' | 'configuration' | 'analytics' | 'demo' | 'agents' | 'ip-management';
+type RateLimitingTab = 'dashboard' | 'users' | 'configuration' | 'demo' | 'agents' | 'ip-management';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -601,8 +602,8 @@ function RateLimitingContent({
     { id: 'ip-management' as RateLimitingTab, name: 'IP Management', icon: Ban },
     { id: 'users' as RateLimitingTab, name: 'Users', icon: Users },
     { id: 'configuration' as RateLimitingTab, name: 'Configuration', icon: Settings },
-    { id: 'analytics' as RateLimitingTab, name: 'Analytics', icon: BarChart3 },
-    { id: 'demo' as RateLimitingTab, name: 'Playground', icon: Activity },
+    // Analytics tab removed - was showing fake/generated data
+    { id: 'demo' as RateLimitingTab, name: 'Testing', icon: Activity },
   ];
 
   return (
@@ -642,7 +643,7 @@ function RateLimitingContent({
         {activeRateLimitingTab === 'ip-management' && <IPManagement />}
         {activeRateLimitingTab === 'users' && <AdminUsers />}
         {activeRateLimitingTab === 'configuration' && <AdminConfiguration />}
-        {activeRateLimitingTab === 'analytics' && <AdminAnalytics />}
+        {/* Analytics tab removed - was showing fake data */}
         {activeRateLimitingTab === 'demo' && <AdminDemo />}
       </div>
     </div>
