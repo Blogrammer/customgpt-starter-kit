@@ -29,9 +29,9 @@ const useCases = [
     title: 'Internal Tools',
     subtitle: 'Deploy RAG for your team',
     features: [
-      'On-premise deployment',
+      'Deploy the Interface on your Cloud while we store the data securely with us',
       'Rate Limiting & quotas',
-      'Rate Limit IP and Conversation Query',
+      'Rate Limit IP and Conversation Query limits',
       'Admin panel for real-time config & monitoring',
       'Cloudflare Turnstile bot protection'
 
@@ -83,9 +83,8 @@ const useCases = [
   {
     icon: HospitalIcon,
     title: 'Healthcare',
-    subtitle: 'HIPAA-compliant AI assistance',
+    subtitle: 'SOC2 and GDPR-compliant AI assistance',
     features: [
-      'HIPAA compliance ready',
       'Secure data handling',
       'Medical terminology support',
       'Integration with EMRs',
