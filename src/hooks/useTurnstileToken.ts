@@ -45,7 +45,7 @@ export function useTurnstileToken() {
    */
   const setToken = useCallback((token: string) => {
     const config = getTurnstileConfig();
-    const expiresAt = Date.now() + config.sessionDuration; // Use session duration (default 1 hour)
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours for demo users
 
     setTokenState({
       token,

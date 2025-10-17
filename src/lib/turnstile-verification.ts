@@ -45,17 +45,17 @@ function getTurnstileRedis(): Redis | null {
   }
 }
 
-// Clean up expired cache entries every 5 minutes
+// Clean up expired cache entries based on cache duration
 setInterval(() => {
   const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-  
+  const config = getTurnstileConfig();
+
   for (const [key, cache] of verificationCache.entries()) {
-    if (now - cache.verifiedAt > fiveMinutes) {
+    if (now - cache.verifiedAt > config.cacheDuration) {
       verificationCache.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000); // Check every 5 minutes
 
 /**
  * Turnstile verification result
@@ -85,7 +85,7 @@ export interface TurnstileConfig {
 export function getTurnstileConfig(): TurnstileConfig {
   const enabled = process.env.TURNSTILE_ENABLED === 'true';
   const cacheSeconds = parseInt(process.env.TURNSTILE_CACHE_DURATION || '300');
-  const sessionHours = parseInt(process.env.TURNSTILE_SESSION_DURATION_HOURS || '1');
+  const sessionHours = parseInt(process.env.TURNSTILE_SESSION_DURATION_HOURS || '24'); // 24 hours for demo users
   const bypassAuthenticated = process.env.TURNSTILE_BYPASS_AUTHENTICATED !== 'false';
   const requiredForIPUsers = process.env.TURNSTILE_REQUIRED_FOR_IP_USERS !== 'false';
 
@@ -551,9 +551,9 @@ class VerificationService {
         if (result.success) {
           const now = Date.now();
           const config = getTurnstileConfig();
-          const expiresAt = now + config.sessionDuration;
+          const expiresAt = now + (24 * 60 * 60 * 1000); // 24 hours for demo users
 
-          console.log('[VerificationService] Token verified successfully, caching for', config.sessionDuration / (60 * 60 * 1000), 'hours');
+          console.log('[VerificationService] Token verified successfully, caching for 24 hours');
           this.setVerification(now, expiresAt);
           return true;
         } else {
